@@ -1,4 +1,7 @@
-function ListingCard({ item }) {
+import { useState } from "react";
+import ChatInterface from "../shared/ChatInterface";
+
+function ListingCard({ item, onItemClick }) {
     const getCategoryColor = (category) => {
         const colors = {
             'electronics': 'bg-blue-100 text-blue-800 border-blue-200',
@@ -13,7 +16,10 @@ function ListingCard({ item }) {
     };
 
     return (
-        <li className="bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-200 p-6 transition-all duration-200 hover:scale-[1.02] cursor-pointer">
+        <li 
+            className="bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-200 p-6 transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+            onClick={() => onItemClick(item)}
+        >
             <div className="flex gap-5">
                 {/* Image */}
                 <div className="w-24 h-24 flex-shrink-0">
@@ -69,6 +75,29 @@ function ListingCard({ item }) {
 }
 
 export default function Listings({ items }) {
+    const [chatItem, setChatItem] = useState(null);
+    const [currentUserItem, setCurrentUserItem] = useState(null);
+    
+    const handleItemClick = (item) => {
+        // For listings, we'll use a mock user item
+        const mockUserItem = {
+            id: 'user-item',
+            name: 'My Item',
+            description: 'Something I want to trade',
+            category: 'other',
+            zipcode: '95192',
+            image: null
+        };
+        
+        setCurrentUserItem(mockUserItem);
+        setChatItem(item);
+    };
+    
+    const handleTradeComplete = (meetupAddress) => {
+        alert(`Trade confirmed! Meetup at: ${meetupAddress}`);
+        setChatItem(null);
+        setCurrentUserItem(null);
+    };
     if (!items?.length) {
         return (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
@@ -102,9 +131,22 @@ export default function Listings({ items }) {
             </div>
             <ul className="grid gap-4">
                 {items.map((it) => (
-                    <ListingCard key={it.id} item={it} />
+                    <ListingCard key={it.id} item={it} onItemClick={handleItemClick} />
                 ))}
             </ul>
+            
+            {/* Chat Interface */}
+            {chatItem && currentUserItem && (
+                <ChatInterface
+                    item={chatItem}
+                    currentUserItem={currentUserItem}
+                    onClose={() => {
+                        setChatItem(null);
+                        setCurrentUserItem(null);
+                    }}
+                    onTrade={handleTradeComplete}
+                />
+            )}
         </div>
     );
 }

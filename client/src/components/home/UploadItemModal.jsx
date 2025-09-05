@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { addItem, findSimilarItems } from "../../shared/utils/items.js"
+import { addItem, findSimilarItems, getUserById } from "../../shared/utils/items.js"
 import MapComponent from "../shared/MapComponent"
+import ChatInterface from "../shared/ChatInterface"
 
 export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
   const [name, setName] = useState("");
@@ -11,6 +12,8 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
   const [imageURL, setImageURL] = useState("");
   const [similarItems, setSimilarItems] = useState([]);
   const [showSimilarItems, setShowSimilarItems] = useState(false);
+  const [chatItem, setChatItem] = useState(null);
+  const [currentUserItem, setCurrentUserItem] = useState(null);
 
   // Close on ESC
   useEffect(() => {
@@ -83,9 +86,32 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
     setImageURL("");
     setSimilarItems([]);
     setShowSimilarItems(false);
+    setChatItem(null);
+    setCurrentUserItem(null);
     
     onClose();
   }
+
+  const handleItemClick = (item) => {
+    // Create current user's item from form data
+    const userItem = {
+      id: 'temp',
+      name,
+      description,
+      category: category || "other",
+      zipcode,
+      image: imageURL || null
+    };
+    
+    setCurrentUserItem(userItem);
+    setChatItem(item);
+  };
+
+  const handleTradeComplete = (meetupAddress) => {
+    alert(`Trade confirmed! Meetup at: ${meetupAddress}`);
+    setChatItem(null);
+    setCurrentUserItem(null);
+  };
 
   return (
     <div
@@ -178,20 +204,48 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
               <span className="text-sm font-medium">Similar Items Found</span>
               {similarItems.length > 0 ? (
                 <div className="border rounded p-3 max-h-40 overflow-y-auto">
-                  {similarItems.map((item) => (
-                    <div key={item.id} className="py-2 border-b last:border-b-0 flex justify-between">
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.description}</p>
-                        <p className="text-xs text-gray-500">
-                          {item.category} • {item.zipcode} • Score: {item.similarityScore}
-                        </p>
+                  {similarItems.map((item) => {
+                    const owner = getUserById(item.ownerId);
+                    return (
+                      <div 
+                        key={item.id} 
+                        className="py-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer rounded-lg px-2 transition-colors"
+                        onClick={() => handleItemClick(item)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-medium text-blue-600 hover:text-blue-800">{item.name}</p>
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                                {item.similarityScore}% match
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">{item.description}</p>
+                            <div className="flex items-center gap-3 text-xs text-gray-500">
+                              <span>{item.category}</span>
+                              <span>{item.zipcode}</span>
+                              <span className="text-green-600">by {owner?.name || 'Unknown User'}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-blue-600 font-medium">Click to chat</div>
+                            <svg className="w-4 h-4 text-blue-400 ml-auto mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 p-3 border rounded">No similar items found.</p>
+                <div className="text-center py-6 border rounded">
+                  <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <p className="text-sm text-gray-500">No similar items found.</p>
+                  <p className="text-xs text-gray-400 mt-1">Try adjusting your description or category.</p>
+                </div>
               )}
             </div>
           )}
@@ -230,6 +284,19 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
           </button>
         </div>
       </div>
+      
+      {/* Chat Interface */}
+      {chatItem && currentUserItem && (
+        <ChatInterface
+          item={chatItem}
+          currentUserItem={currentUserItem}
+          onClose={() => {
+            setChatItem(null);
+            setCurrentUserItem(null);
+          }}
+          onTrade={handleTradeComplete}
+        />
+      )}
     </div>
   );
 }
