@@ -1,5 +1,10 @@
+import ZipSearch from "../components/landing/ZipSearch.jsx";
+
 export default function Landing() {
+
     return (
-        <h1 className="text-black text-7xl">Landing!</h1>
+        <main className="flex justify-center items-center">
+            <ZipSearch />
+        </main>
     )
 }
