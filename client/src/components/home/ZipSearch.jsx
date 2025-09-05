@@ -1,10 +1,8 @@
-import { useState } from "react";
-import data from "../../shared/utils/items.js";
+import { useEffect, useState } from "react";
 
-export default function ZipSearch() {
+export default function ZipSearch({ items, setItems, setItemsModified }) {
   const [zip, setZip] = useState("");
   const [radius, setRadius] = useState(10);
-  const [items] = useState([...data])
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -18,6 +16,8 @@ export default function ZipSearch() {
     const results = items.filter((item) => {
       return item.radius <= radius && item.zipcode === zip
     });
+
+    setItemsModified([...results])
   };
 
   return (
