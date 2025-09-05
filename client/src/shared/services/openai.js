@@ -7,6 +7,8 @@ export const analyzeImageAndGenerateCategory = async (imageFile) => {
 
   // Convert image to base64
   const base64Image = await fileToBase64(imageFile);
+  console.log('Base64 image length:', base64Image.length);
+  console.log('Base64 preview:', base64Image.substring(0, 100) + '...');
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -23,15 +25,24 @@ export const analyzeImageAndGenerateCategory = async (imageFile) => {
             content: [
               {
                 type: "text",
-                text: `Analyze this image and provide a JSON response with the following structure:
+                text: `Analyze this image in detail and provide ONLY a valid JSON response with the following exact structure (no additional text, no markdown, just the JSON):
+
 {
   "category": "one of: electronics, clothing, furniture, sports, music, books, other",
   "name": "descriptive item name (2-4 words)",
   "description": "detailed description of the item (1-2 sentences)",
-  "estimated_value": "estimated USD value as a number"
+  "estimated_value": 100,
+  "condition": "one of: excellent, very good, good, fair, poor",
+  "quality_analysis": "detailed assessment of item condition, wear, damage, or quality indicators you can see",
+  "pricing_factors": "explanation of what influenced the price estimate (brand, condition, market demand, etc.)",
+  "confidence_level": 8
 }
 
-Be specific and accurate. Consider condition, brand, and market value.`
+IMPORTANT: 
+- estimated_value must be a NUMBER, not a string
+- confidence_level must be a NUMBER from 1-10
+- Return ONLY the JSON object, no other text
+- Focus on visible condition, brand recognition, age/wear, market value, and any damage visible`
               },
               {
                 type: "image_url",
@@ -48,24 +59,56 @@ Be specific and accurate. Consider condition, brand, and market value.`
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
+      const errorText = await response.text();
+      console.error('OpenAI API Error Response:', errorText);
+      try {
+        const error = JSON.parse(errorText);
+        throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
+      } catch {
+        throw new Error(`OpenAI API error: ${response.statusText} - ${errorText}`);
+      }
     }
 
     const data = await response.json();
     const content = data.choices[0].message.content;
+    console.log('OpenAI Response Content:', content);
     
-    // Parse JSON response
+    // Parse JSON response - try multiple approaches
     try {
-      const parsed = JSON.parse(content);
+      let parsed;
+      
+      // First try direct JSON parse
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        // If that fails, try to extract JSON from markdown code blocks
+        const jsonMatch = content.match(/```(?:json)?\n?(.*?)\n?```/s);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[1]);
+        } else {
+          // Try to extract JSON object from text
+          const objectMatch = content.match(/\{[\s\S]*\}/);
+          if (objectMatch) {
+            parsed = JSON.parse(objectMatch[0]);
+          } else {
+            throw new Error('No JSON found in response');
+          }
+        }
+      }
+      
       return {
-        category: parsed.category,
-        suggestedName: parsed.name,
-        suggestedDescription: parsed.description,
-        estimatedValue: parsed.estimated_value
+        category: parsed.category || 'other',
+        suggestedName: parsed.name || 'Unknown Item',
+        suggestedDescription: parsed.description || 'Item from image',
+        estimatedValue: Number(parsed.estimated_value) || 100,
+        condition: parsed.condition || 'good',
+        qualityAnalysis: parsed.quality_analysis || 'Analysis not available',
+        pricingFactors: parsed.pricing_factors || 'Factors not specified',
+        confidenceLevel: Number(parsed.confidence_level) || 5
       };
     } catch (parseError) {
       console.error('Failed to parse OpenAI response:', content);
+      console.error('Parse error:', parseError);
       throw new Error('Failed to parse AI response. Please try again.');
     }
   } catch (error) {
@@ -168,10 +211,32 @@ Return only the JSON array, no other text.`;
 // Helper functions
 const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
+    // Check file type
+    console.log('File type:', file.type);
+    console.log('File size:', file.size, 'bytes');
+    
+    if (!file.type.startsWith('image/')) {
+      reject(new Error('File must be an image'));
+      return;
+    }
+    
+    // Check file size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      reject(new Error('Image too large. Please choose a smaller image.'));
+      return;
+    }
+    
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
+    reader.onload = () => {
+      const result = reader.result;
+      console.log('Base64 data URL prefix:', result.substring(0, 50));
+      resolve(result);
+    };
+    reader.onerror = error => {
+      console.error('FileReader error:', error);
+      reject(error);
+    };
   });
 };
 

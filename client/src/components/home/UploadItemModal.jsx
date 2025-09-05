@@ -23,6 +23,7 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
   const [barterSuggestions, setBarterSuggestions] = useState([]);
   const [showBarterSuggestions, setShowBarterSuggestions] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
+  const [aiAnalysis, setAiAnalysis] = useState(null);
 
   // Close on ESC
   useEffect(() => {
@@ -70,9 +71,22 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
       if (!category) setCategory(analysis.category);
       setEstimatedValue(analysis.estimatedValue.toString());
       
+      // Store full analysis for display
+      setAiAnalysis(analysis);
+      
     } catch (error) {
       console.error('Image analysis failed:', error);
       setAnalysisError(error.message);
+      
+      // Provide basic fallback values so user can still proceed
+      if (!name && file.name) {
+        const fileName = file.name.replace(/\.[^/.]+$/, "");
+        setName(fileName.charAt(0).toUpperCase() + fileName.slice(1));
+      }
+      if (!description) {
+        setDescription("Item uploaded from image");
+      }
+      setEstimatedValue("100");
     } finally {
       setIsAnalyzing(false);
     }
@@ -146,6 +160,7 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
     setBarterSuggestions([]);
     setShowBarterSuggestions(false);
     setAnalysisError("");
+    setAiAnalysis(null);
     
     onClose();
   }
@@ -253,7 +268,15 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
             )}
             <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
             {analysisError && (
-              <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{analysisError}</p>
+              <div className="text-sm bg-red-50 border border-red-200 p-3 rounded">
+                <div className="flex items-center gap-2 text-red-800 font-medium mb-1">
+                  ⚠️ AI Analysis Failed
+                </div>
+                <p className="text-red-700 mb-2">{analysisError}</p>
+                <p className="text-xs text-red-600">
+                  Don't worry - you can still fill out the form manually and upload your item!
+                </p>
+              </div>
             )}
           </div>
 
@@ -272,10 +295,58 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
                 max="50000"
               />
             </div>
-            {estimatedValue && (
-              <p className="text-xs text-gray-500">Suggested by AI, but you can edit this value</p>
+            {estimatedValue && aiAnalysis && (
+              <div className="text-xs text-gray-500">
+                <p>Suggested by AI (Confidence: {aiAnalysis.confidenceLevel}/10)</p>
+              </div>
             )}
           </label>
+
+          {/* 4.7. AI Quality Analysis */}
+          {aiAnalysis && (
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                🤖 AI Quality & Price Analysis
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                  {aiAnalysis.condition}
+                </span>
+              </h3>
+              
+              <div className="space-y-3">
+                {/* Condition Assessment */}
+                <div>
+                  <h4 className="text-xs font-medium text-gray-700 mb-1">Quality Assessment:</h4>
+                  <p className="text-sm text-gray-600 bg-white/60 rounded p-2">
+                    {aiAnalysis.qualityAnalysis}
+                  </p>
+                </div>
+
+                {/* Pricing Factors */}
+                <div>
+                  <h4 className="text-xs font-medium text-gray-700 mb-1">Price Factors:</h4>
+                  <p className="text-sm text-gray-600 bg-white/60 rounded p-2">
+                    {aiAnalysis.pricingFactors}
+                  </p>
+                </div>
+
+                {/* Confidence Meter */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <h4 className="text-xs font-medium text-gray-700">Price Confidence:</h4>
+                    <span className="text-xs font-semibold text-blue-700">
+                      {aiAnalysis.confidenceLevel}/10
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${(aiAnalysis.confidenceLevel / 10) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 5. Barter Preferences */}
           <label className="grid gap-1">
