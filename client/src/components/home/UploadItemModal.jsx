@@ -208,14 +208,25 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
           </div>
         </div>
 
-        <div className="p-4 border-t flex items-center justify-end gap-3">
-          {/* 6. Find equivalent button */}
-          <button onClick={() => findEq()} className="rounded px-4 py-2 border">
-            Find equivalent
+        <div className="p-6 border-t bg-gray-50 flex items-center justify-between">
+          <button 
+            onClick={() => findEq()} 
+            className="bg-white border border-gray-300 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            Find Similar Items
           </button>
-          {/* 5. Upload Button */}
-          <button onClick={() => uploadItem()} className="rounded px-4 py-2 bg-black text-white">
-            Upload
+          
+          <button 
+            onClick={() => uploadItem()} 
+            className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white px-8 py-2.5 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Upload Item
           </button>
         </div>
       </div>
