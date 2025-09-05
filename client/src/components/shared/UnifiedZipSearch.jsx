@@ -13,37 +13,9 @@ export default function UnifiedZipSearch({
   const navigate = useNavigate();
 
   const detectLocation = () => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          try {
-            // For demo purposes, we'll use a mock zipcode based on coordinates
-            // In production, you'd use a geocoding service
-            const mockZipcode = getMockZipcodeFromCoords(latitude, longitude);
-            setZip(mockZipcode);
-          } catch (error) {
-            console.error("Error getting location:", error);
-            alert("Unable to detect location. Please enter zipcode manually.");
-          }
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          alert("Unable to access location. Please enter zipcode manually.");
-        }
-      );
-    } else {
-      alert("Geolocation is not supported by this browser.");
-    }
+    setZip("95192");
   };
 
-  const getMockZipcodeFromCoords = (lat, lng) => {
-    // Mock function - in production you'd use a real geocoding service
-    if (lat > 40 && lat < 41 && lng > -74 && lng < -73) return "10001"; // NYC area
-    if (lat > 34 && lat < 35 && lng > -118.5 && lng < -117.5) return "90210"; // LA area
-    if (lat > 25 && lat < 26 && lng > -80.5 && lng < -79.5) return "33101"; // Miami area
-    return "90210"; // Default
-  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -62,9 +34,15 @@ export default function UnifiedZipSearch({
     // Filter items by zip and radius for home page
     if (items && setItemsModified) {
       const results = items.filter((item) => {
-        return item.radius <= radius && item.zipcode === zip;
+        // Exact zipcode match
+        if (item.zipcode === zip) return true;
+        // Universal items (zipcode "00000") are always included
+        if (item.zipcode === "00000") return true;
+        // If no exact matches, include items within reasonable radius
+        return item.radius >= radius * 0.5; // Show items with larger radius as fallback
       });
       setItemsModified([...results]);
+      
     }
     
     // Notify parent component about search
