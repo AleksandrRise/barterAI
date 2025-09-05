@@ -1,9 +1,23 @@
-export default function UploadButton({ onFilesSelected }) {
+import { UploadItemModal } from "./UploadItemModal";
+import { Backdrop } from "./Backdrop";
+import { useState } from "react";
+
+export default function UploadButton() {
+
+    const [open, setOpen] = useState(false);
 
     return (
-        <label className="inline-flex items-center gap-2 cursor-pointer w-fit mt-15">
-            <span className="rounded px-4 py-2 border">Upload Item</span>
-            <input className="sr-only" />
-        </label>
+        <div className="inline-flex items-center gap-2 cursor-pointer w-fit mt-15">
+            <button className="rounded px-4 py-2 border" onClick={() => setOpen(true)}>Upload item</button>
+
+            <Backdrop isOpen={open} onClick={() => setOpen(false)} />
+
+            <UploadItemModal
+                isOpen={open}
+                onClose={() => setOpen(false)}
+                onUpload={(data) => console.log("UPLOAD:", data)}
+                onFindEquivalent={(data) => console.log("FIND EQUIVALENT:", data)}
+            />
+        </div>
     );
 }
