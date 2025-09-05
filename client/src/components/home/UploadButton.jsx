@@ -2,7 +2,7 @@ import { UploadItemModal } from "./UploadItemModal";
 import { Backdrop } from "./Backdrop";
 import { useState } from "react";
 
-export default function UploadButton() {
+export default function UploadButton({ onItemAdded }) {
 
     const [open, setOpen] = useState(false);
 
@@ -15,8 +15,7 @@ export default function UploadButton() {
             <UploadItemModal
                 isOpen={open}
                 onClose={() => setOpen(false)}
-                onUpload={(data) => console.log("UPLOAD:", data)}
-                onFindEquivalent={(data) => console.log("FIND EQUIVALENT:", data)}
+                onItemAdded={onItemAdded}
             />
         </div>
     );

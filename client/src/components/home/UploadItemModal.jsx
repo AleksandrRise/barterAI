@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
+import { addItem, findSimilarItems } from "../../shared/utils/items.js"
+import MapComponent from "../shared/MapComponent"
 
-export function UploadItemModal({ isOpen, onClose, onUpload, onFindEquivalent }) {
+export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
   const [name, setName] = useState("");
   const [zipcode, setZipcode] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imageURL, setImageURL] = useState("");
+  const [similarItems, setSimilarItems] = useState([]);
+  const [showSimilarItems, setShowSimilarItems] = useState(false);
 
   // Close on ESC
   useEffect(() => {
@@ -14,18 +20,72 @@ export function UploadItemModal({ isOpen, onClose, onUpload, onFindEquivalent })
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  // Preview for selected image
+  // Preview for selected image and process upload
   useEffect(() => {
     if (!imageFile) {
       setImageURL("");
       return;
     }
+    
+    // Create preview URL
     const url = URL.createObjectURL(imageFile);
     setImageURL(url);
+    
+    // Convert image to base64 for storage (mock persistent storage)
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      // In a real app, you'd upload to a cloud service here
+      // For now, we'll store the base64 in our mock system
+      setImageURL(base64String);
+    };
+    reader.readAsDataURL(imageFile);
+    
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
-  const payload = () => ({ name: name.trim(), zipcode: zipcode.trim(), imageFile });
+  const findEq = () => {
+    if (!name || !description) {
+      alert("Please enter both name and description to find equivalents");
+      return;
+    }
+
+    const tempItem = { name, description, category, zipcode };
+    const similar = findSimilarItems(tempItem);
+    setSimilarItems(similar);
+    setShowSimilarItems(true);
+  }
+
+  const uploadItem = () => {
+    if (!name || !zipcode || !description) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    const newItem = {
+      name,
+      zipcode,
+      description,
+      category: category || "other",
+      radius: 0,
+      image: imageURL || null
+    };
+
+    const addedItem = addItem(newItem);
+    onItemAdded?.(addedItem);
+    
+    // Reset form
+    setName("");
+    setZipcode("");
+    setDescription("");
+    setCategory("");
+    setImageFile(null);
+    setImageURL("");
+    setSimilarItems([]);
+    setShowSimilarItems(false);
+    
+    onClose();
+  }
 
   return (
     <div
@@ -43,10 +103,10 @@ export function UploadItemModal({ isOpen, onClose, onUpload, onFindEquivalent })
           <button onClick={onClose} className="p-2 text-black/60 hover:text-black" aria-label="Close">✕</button>
         </div>
 
-        <div className="p-4 grid gap-4">
+        <div className="p-4 grid gap-4 max-h-[70vh] overflow-y-auto">
           {/* 1. Name */}
           <label className="grid gap-1">
-            <span className="text-sm font-medium">Name</span>
+            <span className="text-sm font-medium">Name *</span>
             <input
               type="text"
               value={name}
@@ -56,7 +116,37 @@ export function UploadItemModal({ isOpen, onClose, onUpload, onFindEquivalent })
             />
           </label>
 
-          {/* 2. Image */}
+          {/* 2. Description */}
+          <label className="grid gap-1">
+            <span className="text-sm font-medium">Description *</span>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="border rounded px-3 py-2 h-20 resize-none"
+              placeholder="Describe your item in detail..."
+            />
+          </label>
+
+          {/* 3. Category */}
+          <label className="grid gap-1">
+            <span className="text-sm font-medium">Category</span>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="border rounded px-3 py-2"
+            >
+              <option value="">Select category</option>
+              <option value="clothing">Clothing</option>
+              <option value="electronics">Electronics</option>
+              <option value="furniture">Furniture</option>
+              <option value="sports">Sports</option>
+              <option value="music">Music</option>
+              <option value="books">Books</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+
+          {/* 4. Image */}
           <div className="grid gap-2">
             <span className="text-sm font-medium">Image</span>
             {imageURL ? (
@@ -69,13 +159,12 @@ export function UploadItemModal({ isOpen, onClose, onUpload, onFindEquivalent })
             <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
           </div>
 
-          {/* 3. Zipcode */}
+          {/* 5. Zipcode */}
           <label className="grid gap-1">
-            <span className="text-sm font-medium">Zipcode</span>
+            <span className="text-sm font-medium">Zipcode *</span>
             <input
               type="text"
               inputMode="numeric"
-              pattern="\\d{5}"
               value={zipcode}
               onChange={(e) => setZipcode(e.target.value)}
               className="border rounded px-3 py-2"
@@ -83,22 +172,49 @@ export function UploadItemModal({ isOpen, onClose, onUpload, onFindEquivalent })
             />
           </label>
 
-          {/* 4. Map placeholder */}
-          <div className="grid gap-1">
-            <span className="text-sm font-medium">Location (Map placeholder)</span>
-            <div className="h-40 w-full rounded bg-neutral-200 border grid place-items-center text-neutral-600">
-              Google Maps goes here
+          {/* 6. Similar Items Results */}
+          {showSimilarItems && (
+            <div className="grid gap-2">
+              <span className="text-sm font-medium">Similar Items Found</span>
+              {similarItems.length > 0 ? (
+                <div className="border rounded p-3 max-h-40 overflow-y-auto">
+                  {similarItems.map((item) => (
+                    <div key={item.id} className="py-2 border-b last:border-b-0 flex justify-between">
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-gray-600">{item.description}</p>
+                        <p className="text-xs text-gray-500">
+                          {item.category} • {item.zipcode} • Score: {item.similarityScore}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 p-3 border rounded">No similar items found.</p>
+              )}
             </div>
+          )}
+
+          {/* 7. Map */}
+          <div className="grid gap-1">
+            <span className="text-sm font-medium">Location Preview</span>
+            <MapComponent 
+              zipcode={zipcode}
+              items={[]}
+              radius={10}
+              height="250px"
+            />
           </div>
         </div>
 
         <div className="p-4 border-t flex items-center justify-end gap-3">
           {/* 6. Find equivalent button */}
-          <button onClick={() => onFindEquivalent?.(payload())} className="rounded px-4 py-2 border">
+          <button onClick={() => findEq()} className="rounded px-4 py-2 border">
             Find equivalent
           </button>
           {/* 5. Upload Button */}
-          <button onClick={() => onUpload?.(payload())} className="rounded px-4 py-2 bg-black text-white">
+          <button onClick={() => uploadItem()} className="rounded px-4 py-2 bg-black text-white">
             Upload
           </button>
         </div>
