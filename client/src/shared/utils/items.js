@@ -24,7 +24,17 @@ const items = [
   { "id": 12, "name": "Art Collection", "zipcode": "30301", "radius": 30, "description": "Original paintings and prints", "category": "other", "image": null, "ownerId": 4 },
   { "id": 13, "name": "San Jose Tech Gadgets", "zipcode": "95192", "radius": 15, "description": "Various tech accessories and gadgets", "category": "electronics", "image": null, "ownerId": 5 },
   { "id": 14, "name": "Local Furniture Set", "zipcode": "95192", "radius": 10, "description": "Modern living room furniture", "category": "furniture", "image": null, "ownerId": 6 },
-  { "id": 15, "name": "Bay Area Books", "zipcode": "95192", "radius": 20, "description": "Collection of programming and tech books", "category": "books", "image": null, "ownerId": 7 }
+  { "id": 15, "name": "Bay Area Books", "zipcode": "95192", "radius": 20, "description": "Collection of programming and tech books", "category": "books", "image": null, "ownerId": 7 },
+  { "id": 16, "name": "Gaming Setup", "zipcode": "95112", "radius": 25, "description": "Complete gaming rig with RGB lighting", "category": "electronics", "image": null, "ownerId": 8 },
+  { "id": 17, "name": "Vintage Vinyl Records", "zipcode": "95126", "radius": 30, "description": "Collection of classic rock and jazz vinyl", "category": "music", "image": null, "ownerId": 1 },
+  { "id": 18, "name": "Professional Bike", "zipcode": "95118", "radius": 15, "description": "Trek road bike, barely used", "category": "sports", "image": null, "ownerId": 2 },
+  { "id": 19, "name": "Art Supplies Kit", "zipcode": "95110", "radius": 20, "description": "Complete set of professional art supplies", "category": "other", "image": null, "ownerId": 3 },
+  { "id": 20, "name": "Kitchen Appliances", "zipcode": "95124", "radius": 12, "description": "Blender, toaster, and coffee maker", "category": "other", "image": null, "ownerId": 4 },
+  { "id": 21, "name": "Designer Shoes", "zipcode": "95127", "radius": 18, "description": "Brand new Nike and Adidas collection", "category": "clothing", "image": null, "ownerId": 5 },
+  { "id": 22, "name": "Home Theater System", "zipcode": "95132", "radius": 35, "description": "5.1 surround sound system", "category": "electronics", "image": null, "ownerId": 6 },
+  { "id": 23, "name": "Garden Tools", "zipcode": "95136", "radius": 22, "description": "Complete gardening toolkit", "category": "other", "image": null, "ownerId": 7 },
+  { "id": 24, "name": "Workout Equipment", "zipcode": "95148", "radius": 28, "description": "Dumbbells and yoga mats", "category": "sports", "image": null, "ownerId": 8 },
+  { "id": 25, "name": "Baby Gear", "zipcode": "95123", "radius": 15, "description": "Stroller, car seat, and toys", "category": "other", "image": null, "ownerId": 1 }
 ]
 
 export const getItems = () => [...items]
