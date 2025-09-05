@@ -1,9 +1,12 @@
 import { useState } from "react";
 import data from "../../shared/utils/items.js";
+import { useNavigate } from "react-router-dom";
 
 export default function ZipSearch() {
   const [zip, setZip] = useState("");
   const [radius, setRadius] = useState(10);
+  const [items] = useState([...data])
+  const navigate = useNavigate()
 
   const detectLocation = () => {
 
@@ -18,11 +21,11 @@ export default function ZipSearch() {
     }
 
     // Filter items by zip
-    const results = data.filter((item) => {
-      return item.zipcode === zip && item.radius <= radius
+    const results = items.filter((item) => {
+      return item.radius <= radius && item.zipcode === zip
     });
 
-    console.log("Results:", results);
+    navigate("/home")
   };
 
   return (
