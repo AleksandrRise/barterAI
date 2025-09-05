@@ -1,5 +1,11 @@
+import PageHeader from "../components/home/Pageheader"
+import ZipSearch from "../components/home/ZipSearch"
+
 export default function Home() {
     return (
-        <h1>Home!</h1>
+        <main>
+            <PageHeader />
+            <ZipSearch />
+        </main>
     )
 }
