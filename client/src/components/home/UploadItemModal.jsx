@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { addItem, findSimilarItems, getUserById } from "../../shared/utils/items.js"
+import { addItem, findSimilarItems, getUserById, getItems } from "../../shared/utils/items.js"
+import { analyzeImageAndGenerateCategory, generateBarterSuggestions } from "../../shared/services/openai.js"
 import MapComponent from "../shared/MapComponent"
 import ChatInterface from "../shared/ChatInterface"
 
@@ -14,6 +15,14 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
   const [showSimilarItems, setShowSimilarItems] = useState(false);
   const [chatItem, setChatItem] = useState(null);
   const [currentUserItem, setCurrentUserItem] = useState(null);
+  
+  // OpenAI integration states
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [estimatedValue, setEstimatedValue] = useState("");
+  const [barterPreferences, setBarterPreferences] = useState("");
+  const [barterSuggestions, setBarterSuggestions] = useState([]);
+  const [showBarterSuggestions, setShowBarterSuggestions] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
 
   // Close on ESC
   useEffect(() => {
@@ -23,7 +32,7 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  // Preview for selected image and process upload
+  // Preview for selected image and process upload with OpenAI analysis
   useEffect(() => {
     if (!imageFile) {
       setImageURL("");
@@ -34,12 +43,13 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
     const url = URL.createObjectURL(imageFile);
     setImageURL(url);
     
+    // Auto-analyze image with OpenAI when uploaded
+    analyzeImageWithOpenAI(imageFile);
+    
     // Convert image to base64 for storage (mock persistent storage)
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result;
-      // In a real app, you'd upload to a cloud service here
-      // For now, we'll store the base64 in our mock system
       setImageURL(base64String);
     };
     reader.readAsDataURL(imageFile);
@@ -47,16 +57,58 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
-  const findEq = () => {
+  const analyzeImageWithOpenAI = async (file) => {
+    setIsAnalyzing(true);
+    setAnalysisError("");
+    
+    try {
+      const analysis = await analyzeImageAndGenerateCategory(file);
+      
+      // Auto-populate form fields with AI suggestions
+      if (!name) setName(analysis.suggestedName);
+      if (!description) setDescription(analysis.suggestedDescription);
+      if (!category) setCategory(analysis.category);
+      setEstimatedValue(analysis.estimatedValue.toString());
+      
+    } catch (error) {
+      console.error('Image analysis failed:', error);
+      setAnalysisError(error.message);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const findEq = async () => {
     if (!name || !description) {
       alert("Please enter both name and description to find equivalents");
       return;
     }
 
-    const tempItem = { name, description, category, zipcode };
+    const tempItem = { 
+      name, 
+      description, 
+      category, 
+      zipcode,
+      estimatedValue: estimatedValue ? parseInt(estimatedValue) : 100
+    };
+    
+    // Find similar items using existing algorithm
     const similar = findSimilarItems(tempItem);
     setSimilarItems(similar);
     setShowSimilarItems(true);
+    
+    // Generate intelligent barter suggestions if preferences are provided
+    if (barterPreferences.trim()) {
+      try {
+        const availableItems = getItems();
+        const suggestions = await generateBarterSuggestions(tempItem, barterPreferences, availableItems);
+        setBarterSuggestions(suggestions);
+        setShowBarterSuggestions(true);
+      } catch (error) {
+        console.error('Barter suggestions failed:', error);
+        // Fall back to regular similar items if OpenAI fails
+      }
+    }
   }
 
   const uploadItem = () => {
@@ -71,7 +123,8 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
       description,
       category: category || "other",
       radius: 0,
-      image: imageURL || null
+      image: imageURL || null,
+      estimatedValue: estimatedValue ? parseInt(estimatedValue) : 100
     };
 
     const addedItem = addItem(newItem);
@@ -88,6 +141,11 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
     setShowSimilarItems(false);
     setChatItem(null);
     setCurrentUserItem(null);
+    setEstimatedValue("");
+    setBarterPreferences("");
+    setBarterSuggestions([]);
+    setShowBarterSuggestions(false);
+    setAnalysisError("");
     
     onClose();
   }
@@ -100,7 +158,8 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
       description,
       category: category || "other",
       zipcode,
-      image: imageURL || null
+      image: imageURL || null,
+      estimatedValue: estimatedValue ? parseInt(estimatedValue) : 100
     };
     
     setCurrentUserItem(userItem);
@@ -176,16 +235,61 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
           <div className="grid gap-2">
             <span className="text-sm font-medium">Image</span>
             {imageURL ? (
-              <img src={imageURL} alt="Preview" className="w-full h-48 object-cover rounded border" />
+              <div className="relative">
+                <img src={imageURL} alt="Preview" className="w-full h-48 object-cover rounded border" />
+                {isAnalyzing && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded">
+                    <div className="text-white text-center">
+                      <div className="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
+                      <p className="text-sm">Analyzing image...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="w-full h-48 rounded border grid place-items-center text-sm text-neutral-600">
                 No image selected
               </div>
             )}
             <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
+            {analysisError && (
+              <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{analysisError}</p>
+            )}
           </div>
 
-          {/* 5. Zipcode */}
+          {/* 4.5. Estimated Value */}
+          <label className="grid gap-1">
+            <span className="text-sm font-medium">Estimated Value (USD)</span>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+              <input
+                type="number"
+                value={estimatedValue}
+                onChange={(e) => setEstimatedValue(e.target.value)}
+                className="border rounded px-8 py-2 w-full"
+                placeholder="100"
+                min="1"
+                max="50000"
+              />
+            </div>
+            {estimatedValue && (
+              <p className="text-xs text-gray-500">Suggested by AI, but you can edit this value</p>
+            )}
+          </label>
+
+          {/* 5. Barter Preferences */}
+          <label className="grid gap-1">
+            <span className="text-sm font-medium">What are you looking to trade for?</span>
+            <textarea
+              value={barterPreferences}
+              onChange={(e) => setBarterPreferences(e.target.value)}
+              className="border rounded px-3 py-2 h-16 resize-none"
+              placeholder="e.g., I'm interested in electronics, musical instruments, or books about programming..."
+            />
+            <p className="text-xs text-gray-500">This helps our AI suggest better matches for you</p>
+          </label>
+
+          {/* 6. Zipcode */}
           <label className="grid gap-1">
             <span className="text-sm font-medium">Zipcode *</span>
             <input
@@ -198,7 +302,53 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
             />
           </label>
 
-          {/* 6. Similar Items Results */}
+          {/* 7. AI Barter Suggestions */}
+          {showBarterSuggestions && barterSuggestions.length > 0 && (
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">🤖 AI Barter Suggestions</span>
+                <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                  Based on your preferences
+                </span>
+              </div>
+              <div className="border rounded p-3 max-h-40 overflow-y-auto bg-gradient-to-br from-green-50 to-blue-50">
+                {barterSuggestions.map((item) => {
+                  const owner = getUserById(item.ownerId);
+                  return (
+                    <div 
+                      key={item.id} 
+                      className="py-3 border-b last:border-b-0 hover:bg-white cursor-pointer rounded-lg px-2 transition-colors"
+                      onClick={() => handleItemClick(item)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-green-600 hover:text-green-800">{item.name}</p>
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                              {item.matchScore}% AI match
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-1">{item.description}</p>
+                          <p className="text-xs text-green-700 mb-1 italic">🤖 {item.matchReason}</p>
+                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                            <span>{item.category}</span>
+                            <span>${item.estimatedValue}</span>
+                            <span>{item.zipcode}</span>
+                            <span className="text-green-600">by {owner?.name || 'Unknown User'}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-green-600 font-medium">Click to chat</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 8. Similar Items Results */}
           {showSimilarItems && (
             <div className="grid gap-2">
               <span className="text-sm font-medium">Similar Items Found</span>
@@ -223,6 +373,7 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
                             <p className="text-sm text-gray-600 mb-1">{item.description}</p>
                             <div className="flex items-center gap-3 text-xs text-gray-500">
                               <span>{item.category}</span>
+                              <span>${item.estimatedValue || 'N/A'}</span>
                               <span>{item.zipcode}</span>
                               <span className="text-green-600">by {owner?.name || 'Unknown User'}</span>
                             </div>
@@ -250,7 +401,7 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
             </div>
           )}
 
-          {/* 7. Map */}
+          {/* 9. Map */}
           <div className="grid gap-1">
             <span className="text-sm font-medium">Location Preview</span>
             <MapComponent 
