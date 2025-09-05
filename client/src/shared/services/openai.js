@@ -38,11 +38,21 @@ export const analyzeImageAndGenerateCategory = async (imageFile) => {
   "confidence_level": 8
 }
 
+CRITICAL PRICING GUIDELINES:
+- Use current 2024-2025 market values for electronics and brand items
+- iPhone 15 Pro Max: $800-1200 depending on condition
+- Latest MacBooks: $1000-3000 depending on model
+- Gaming consoles: $300-800 depending on generation
+- Designer items: Research actual resale values
+- Vintage items: Consider collector value
+- Don't undervalue modern electronics - they retain significant value
+
 IMPORTANT: 
 - estimated_value must be a NUMBER, not a string
 - confidence_level must be a NUMBER from 1-10
 - Return ONLY the JSON object, no other text
-- Focus on visible condition, brand recognition, age/wear, market value, and any damage visible`
+- Be realistic about current market prices, especially for electronics and luxury items
+- Consider the item's actual resale/trade value, not just depreciated value`
               },
               {
                 type: "image_url",
@@ -53,8 +63,8 @@ IMPORTANT:
             ]
           }
         ],
-        max_tokens: 400,
-        temperature: 0.3
+        max_tokens: 600,
+        temperature: 0.2
       })
     });
 
