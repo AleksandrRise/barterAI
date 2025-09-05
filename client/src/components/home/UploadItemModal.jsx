@@ -75,7 +75,6 @@ export function UploadItemModal({ isOpen, onClose, onItemAdded }) {
       setAiAnalysis(analysis);
       
     } catch (error) {
-      console.error('Image analysis failed:', error);
       setAnalysisError(error.message);
       
       // Provide basic fallback values so user can still proceed

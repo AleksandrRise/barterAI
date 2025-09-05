@@ -1,12 +1,56 @@
-# React + Vite
+# BarterAI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern local trading platform that connects people who want to exchange items without using money. Features AI-powered item analysis, intelligent barter suggestions, and integrated Google Maps for location-based trading.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Smart Item Upload**: Take a photo and let AI categorize and value your items
+- **Intelligent Matching**: AI suggests the best barter opportunities based on your preferences
+- **Location-Based**: Find traders near you with integrated Google Maps
+- **Real-Time Chat**: Communicate with potential trading partners
+- **Secure Trading**: Built-in safety measures and trade confirmation system
 
-## Expanding the ESLint configuration
+## Quick Start
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. **Installation**
+   ```bash
+   npm install
+   ```
+
+2. **Environment Setup**
+   Create a `.env.local` file:
+   ```
+   VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
+   VITE_OPENAI_API_KEY=your_openai_key
+   ```
+
+3. **Development**
+   ```bash
+   npm run dev
+   ```
+
+4. **Production Build**
+   ```bash
+   npm run build
+   ```
+
+## API Keys Required
+
+- **Google Maps API**: For location services and map display
+- **OpenAI API**: For AI-powered item analysis and barter suggestions
+
+## Tech Stack
+
+- React 19 + Vite
+- TailwindCSS 4
+- Google Maps JavaScript API
+- OpenAI GPT-4o-mini
+- React Router
+
+## Deployment
+
+Ready for deployment on Vercel, Netlify, or any static hosting platform.
+
+## License
+
+MIT

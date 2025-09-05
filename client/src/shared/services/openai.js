@@ -7,8 +7,6 @@ export const analyzeImageAndGenerateCategory = async (imageFile) => {
 
   // Convert image to base64
   const base64Image = await fileToBase64(imageFile);
-  console.log('Base64 image length:', base64Image.length);
-  console.log('Base64 preview:', base64Image.substring(0, 100) + '...');
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -70,18 +68,16 @@ IMPORTANT:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API Error Response:', errorText);
       try {
         const error = JSON.parse(errorText);
         throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
       } catch {
-        throw new Error(`OpenAI API error: ${response.statusText} - ${errorText}`);
+        throw new Error(`OpenAI API error: ${response.statusText}`);
       }
     }
 
     const data = await response.json();
     const content = data.choices[0].message.content;
-    console.log('OpenAI Response Content:', content);
     
     // Parse JSON response - try multiple approaches
     try {
@@ -117,12 +113,9 @@ IMPORTANT:
         confidenceLevel: Number(parsed.confidence_level) || 5
       };
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content);
-      console.error('Parse error:', parseError);
       throw new Error('Failed to parse AI response. Please try again.');
     }
   } catch (error) {
-    console.error('OpenAI API error:', error);
     throw error;
   }
 };
@@ -209,11 +202,9 @@ Return only the JSON array, no other text.`;
       }).filter(Boolean);
       
     } catch (parseError) {
-      console.error('Failed to parse barter suggestions:', content);
       throw new Error('Failed to parse AI suggestions. Please try again.');
     }
   } catch (error) {
-    console.error('OpenAI barter suggestion error:', error);
     throw error;
   }
 };
@@ -221,16 +212,11 @@ Return only the JSON array, no other text.`;
 // Helper functions
 const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
-    // Check file type
-    console.log('File type:', file.type);
-    console.log('File size:', file.size, 'bytes');
-    
     if (!file.type.startsWith('image/')) {
       reject(new Error('File must be an image'));
       return;
     }
     
-    // Check file size (max 20MB)
     if (file.size > 20 * 1024 * 1024) {
       reject(new Error('Image too large. Please choose a smaller image.'));
       return;
@@ -238,16 +224,8 @@ const fileToBase64 = (file) => {
     
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => {
-      const result = reader.result;
-      console.log('Base64 data URL prefix:', result.substring(0, 50));
-      resolve(result);
-    };
-    reader.onerror = error => {
-      console.error('FileReader error:', error);
-      reject(error);
-    };
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
   });
 };
 
-// Removed mock functions as we now use real OpenAI API
